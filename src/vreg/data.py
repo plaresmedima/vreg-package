@@ -117,7 +117,7 @@ def _clear_cache():
     Note if you clear the cache the data will need to be downloaded again 
     if you need them.
     """
-
+    # TODO: This also deletes __init__.py
     f = importlib_resources.files('vreg.datafiles')
     for item in f.iterdir(): 
         if item.is_file(): 

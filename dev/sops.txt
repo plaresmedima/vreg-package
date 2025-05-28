@@ -84,6 +84,7 @@ Creating a new release (from a fork)
 - Merge the dev branch with the main branch. 
 - Create a release on github, with the main branch as target.
 - Create a release on PyPI (see below).
+- in docs repository - build release notes and update website
 
 
 Creating a PyPi release
