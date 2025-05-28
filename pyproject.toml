@@ -14,7 +14,8 @@ dependencies = [
   'scipy',
   'scikit-image', # remove - currently only used to generate ellipsoid in fake
   'requests',
-
+  'nibabel',
+  'zarr',
 ]
 # optional information
 description = "3D arrays with spatial awareness"
@@ -57,16 +58,6 @@ requires-python = ">=3.6" # arbitrary - relax this?
 plot = [
   'pyvista',
   'matplotlib',
-]
-rw = [
-    "nibabel",
-    "zarr",
-]
-complete = [
-  'pyvista',
-  'matplotlib', 
-  "nibabel", 
-  "zarr",
 ]
 
 [tool.setuptools]

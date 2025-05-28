@@ -228,7 +228,8 @@ class Volume3D:
             raise ValueError("This function is not yet available for volumes "
                              "with more than 3 dimensions")
         values, affine = utils.extract_slice(self.values, self.affine, z)
-        return Volume3D(values.copy(), affine.copy())
+        values = np.expand_dims(values.copy(), axis=-1)
+        return Volume3D(values, affine.copy())
 
 
     def separate(self, axis=None):
@@ -825,7 +826,7 @@ class Volume3D:
             numpy.ndarray: 3-element vector pointing to the volume's center of 
             mass.
         """ 
-        return utils.center_of_mass(self.values[:3], self.affine, coords=coords)
+        return utils.center_of_mass(self.values[:,:,:], self.affine, coords=coords)
 
 
     def reslice(self, affine=None, orient=None, rotation=None, center=None, 

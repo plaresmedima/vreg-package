@@ -3,7 +3,7 @@ import sys
 import pickle
 import requests
 
-from vreg import vol
+from vreg import vol, rw
 
 # filepaths need to be identified with importlib_resources
 # rather than __file__ as the latter does not work at runtime
@@ -28,14 +28,23 @@ DATASETS = [
     'left_kidney',
     'right_kidney',
     'MTR',
-    'T1',
-    'T2star',
-
+    'T1_00',
+    'T1_01',
+    'T1_02',
+    'T1_03',
+    'T1_04',
+    'T2star_00',
+    'T2star_01',
+    'T2star_02',
+    'T2star_03',
+    'T2star_04',
 ]
 
 
 def fetch(dataset=None, clear_cache=False, download_all=False) -> vol.Volume3D:
-    """Fetch a dataset included in vreg
+    """Fetch a dataset included in vreg.
+
+    The source data are on `Zenodo <https://doi.org/10.5281/zenodo.14630318>`_
 
     Args:
         dataset (str, optional): name of the dataset. See below for options.
@@ -73,29 +82,12 @@ def fetch(dataset=None, clear_cache=False, download_all=False) -> vol.Volume3D:
 
         >>> plt.overlay_2d(T1, kidneys)
 
-    Notes:
-
-        The following datasets can be fetched: 
-        
-            - 'Dixon_out_phase': A 3D coronal opposed-phase volume from a DIXON
-              scan of the abdomen.
-            - 'kidneys': A 3D mask covering the kidneys on the coronal DIXON 
-              scan. 
-            - 'left_kidney': A 3D mask covering the left kidney on the DIXON 
-              scan. 
-            - 'right_kidney': A 3D mask covering the right kidney on the 
-              DIXON scan. 
-            - 'MTR': A 3D magnetization transfer ratio volume with oblique 
-              orientation aligned with the axis of the kidneys.
-            - 'T1': A 5-slice 2D T1-map through the kidneys in oblique 
-              orientations aligned with the axis of the kidneys.
-            - 'T2star': A 5-slice 2D T2* map through the kidneys in oblique 
-              orientations aligned with the axis of the kidneys.
-
     """
 
     if dataset is None:
         v = None
+    elif dataset in ['T1', 'T2star']:
+        v = [_fetch_dataset(f'{dataset}_{str(i).zfill(2)}') for i in range(5)]
     else:
         v = _fetch_dataset(dataset)
 
@@ -121,36 +113,33 @@ def _clear_cache():
     f = importlib_resources.files('vreg.datafiles')
     for item in f.iterdir(): 
         if item.is_file(): 
-            item.unlink() # Delete the file
-
+            if str(item)[-11:] != '__init__.py':
+                item.unlink() # Delete the file
 
 
 def _fetch_dataset(dataset):
 
     f = importlib_resources.files('vreg.datafiles')
-    datafile = str(f.joinpath(dataset + '.pkl'))
+    datafile = str(f.joinpath(dataset + '.nii'))
 
     # If this is the first time the data are accessed, download them.
     if not os.path.exists(datafile):
         _download(dataset)
 
-    with open(datafile, 'rb') as f:
-        v = pickle.load(f)
-
-    return v
+    return rw.read_nifti(datafile)
 
 
 def _download(dataset):
         
     f = importlib_resources.files('vreg.datafiles')
-    datafile = str(f.joinpath(dataset + '.pkl'))
+    datafile = str(f.joinpath(dataset + '.nii'))
 
     if os.path.exists(datafile):
         return
 
     # Dataset location
-    version_doi = "14630319" # This will change if a new version is created on zenodo
-    file_url = "https://zenodo.org/records/" + version_doi + "/files/" + dataset + ".pkl"
+    version_doi = "15535700" # This will change if a new version is created on zenodo
+    file_url = "https://zenodo.org/records/" + version_doi + "/files/" + dataset + ".nii"
 
     # Make the request and check for connection error
     try:
