@@ -13,12 +13,6 @@ from vreg.metrics import *
 from vreg import mod_freeform
 from vreg.mod_freeform import *
 
-from vreg import obsolete_transforms
-from vreg.obsolete_transforms import *
-
-from vreg import obsolete_mod_align
-from vreg.obsolete_mod_align import *
-
 from vreg import fake
 from vreg.fake import *
 
