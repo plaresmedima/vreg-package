@@ -91,22 +91,9 @@ def envelope(d, affine, decimals=None):
 
     return output_shape, output_pos
 
+def bounding_box_geom(array:np.ndarray, affine:np.ndarray, margin:float=0)->tuple:
 
-def bounding_box(array:np.ndarray, affine:np.ndarray, margin:float=0)->tuple:
-    """Return a bounding box around a region of interest.
-
-    For a given mask array with know affine this finds the bounding box around the mask, and returns its shape and affine.
-
-    Args:
-        array (np.ndarray): 3d binary array with mask data (1=inside, 0=outside).
-        affine (np.ndarray): affine of the 3d volume as a 4x4 numpy array.
-        margin (float): margin (in mm) to include around the bounding box. (default=0)
-
-    Returns:
-        tuple: shape and affine of the bounding box, where shape is a tuple of 3 values and affine is a 4x4 numpy array.
-    """
-
-    _, _, pixel_spacing = affine_components(affine)
+    pixel_spacing = np.linalg.norm(affine[:3, :3], axis=0)
     xmargin = np.around(margin/pixel_spacing[0]).astype(np.int16)
     ymargin = np.around(margin/pixel_spacing[1]).astype(np.int16)
     zmargin = np.around(margin/pixel_spacing[2]).astype(np.int16)
@@ -122,6 +109,10 @@ def bounding_box(array:np.ndarray, affine:np.ndarray, margin:float=0)->tuple:
     nx = 1 + np.ceil(x1-x0).astype(np.int16)
     ny = 1 + np.ceil(y1-y0).astype(np.int16)
     nz = 1 + np.ceil(z1-z0).astype(np.int16)
+    return x0, y0, z0, nx, ny, nz
+
+def bounding_box_apply(array, affine, x0, y0, z0, nx, ny, nz):
+
     box_array = array[x0:x0+nx, y0:y0+ny, z0:z0+nz]
 
     # Get the corner in absolute coordinates and offset the affine.
@@ -134,6 +125,41 @@ def bounding_box(array:np.ndarray, affine:np.ndarray, margin:float=0)->tuple:
     box_affine[:nd, nd] = r0
 
     return box_array, box_affine
+
+
+def bounding_box(array:np.ndarray, affine:np.ndarray, margin:float=0)->tuple:
+
+    # pixel_spacing = np.linalg.norm(affine[:3, :3], axis=0)
+    # xmargin = np.around(margin/pixel_spacing[0]).astype(np.int16)
+    # ymargin = np.around(margin/pixel_spacing[1]).astype(np.int16)
+    # zmargin = np.around(margin/pixel_spacing[2]).astype(np.int16)
+
+    # # Find shape and location of the box in array coordinates and get array.
+    # x, y, z = np.where(array != 0)
+    # x0, x1 = np.amin(x)-xmargin, np.amax(x)+xmargin
+    # y0, y1 = np.amin(y)-ymargin, np.amax(y)+ymargin
+    # z0, z1 = np.amin(z)-zmargin, np.amax(z)+zmargin
+    # x0, x1 = np.amax([0, x0]), np.amin([x1, array.shape[0]-1])
+    # y0, y1 = np.amax([0, y0]), np.amin([y1, array.shape[1]-1])
+    # z0, z1 = np.amax([0, z0]), np.amin([z1, array.shape[2]-1])
+    # nx = 1 + np.ceil(x1-x0).astype(np.int16)
+    # ny = 1 + np.ceil(y1-y0).astype(np.int16)
+    # nz = 1 + np.ceil(z1-z0).astype(np.int16)
+
+    x0, y0, z0, nx, ny, nz = bounding_box_geom(array, affine, margin)
+    return bounding_box_apply(array, affine, x0, y0, z0, nx, ny, nz)
+    # box_array = array[x0:x0+nx, y0:y0+ny, z0:z0+nz]
+
+    # # Get the corner in absolute coordinates and offset the affine.
+    # nd = 3
+    # matrix = affine[:nd,:nd]
+    # offset = affine[:nd, nd]
+    # r0 = np.array([x0,y0,z0])
+    # r0 = np.dot(r0, matrix.T) + offset
+    # box_affine = affine.copy()
+    # box_affine[:nd, nd] = r0
+
+    # return box_array, box_affine
 
 
 def affine_output_geometry(input_shape, input_affine, transformation):

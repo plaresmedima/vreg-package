@@ -5,16 +5,27 @@ import vreg.utils
 
 
 
+# def mask_volume(array, affine, array_mask, affine_mask, margin:float=0):
+
+#     # Overlay the mask on the array.
+#     array_mask, _ = affine_reslice(array_mask, affine_mask, affine, array.shape)
+
+#     # Mask out array pixels outside of region.
+#     array *= array_mask
+
+#     # Extract bounding box around non-zero pixels in masked array.
+#     array, affine = vreg.utils.bounding_box(array, affine, margin)
+    
+#     return array, affine
+
 def mask_volume(array, affine, array_mask, affine_mask, margin:float=0):
 
     # Overlay the mask on the array.
     array_mask, _ = affine_reslice(array_mask, affine_mask, affine, array.shape)
 
-    # Mask out array pixels outside of region.
-    array *= array_mask
-
     # Extract bounding box around non-zero pixels in masked array.
-    array, affine = vreg.utils.bounding_box(array, affine, margin)
+    geom = vreg.utils.bounding_box_geom(array_mask, affine, margin)
+    array, affine = vreg.utils.bounding_box_apply(array, affine, *geom)
     
     return array, affine
 
@@ -80,19 +91,24 @@ def affine_reslice(
     if output_shape is None:
 
         # Get field of view from input data
-        _, _, input_pixel_spacing = vreg.utils.affine_components(input_affine)
+        input_pixel_spacing = np.linalg.norm(input_affine[:3,:3], axis=0)
         field_of_view = np.multiply(np.array(input_data.shape), input_pixel_spacing)
 
         # Find output shape for the same field of view
-        output_rotation, output_translation, output_pixel_spacing = vreg.utils.affine_components(output_affine)
+        #output_rotation, output_translation, output_pixel_spacing = vreg.utils.affine_components(output_affine)
+        output_pixel_spacing = np.linalg.norm(output_affine[:3,:3], axis=0)
         output_shape = np.around(np.divide(field_of_view, output_pixel_spacing)).astype(np.int16)
         output_shape[np.where(output_shape==0)] = 1
 
         # Adjust output pixel spacing to fit the field of view
         output_pixel_spacing = np.divide(field_of_view, output_shape)
-        output_affine = vreg.utils.affine_matrix(
-            rotation=output_rotation, translation=output_translation, 
-            pixel_spacing=output_pixel_spacing)
+        new_output_affine = output_affine.copy()
+        for d in [0,1,2]:
+            new_output_affine[:3,d] = output_pixel_spacing[d] * output_affine[:3,d]/np.linalg.norm(output_affine[:3,d])
+        output_affine = new_output_affine
+        # output_affine = vreg.utils.affine_matrix(
+        #     rotation=output_rotation, translation=output_translation, 
+        #     pixel_spacing=output_pixel_spacing)
 
     # Reslice input data to output geometry
     transform = np.linalg.inv(input_affine).dot(output_affine) # Ai B

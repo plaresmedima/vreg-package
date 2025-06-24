@@ -360,8 +360,25 @@ class Volume3D:
         v = v.slice_like(self)
         values = np.subtract(self.values, v.values, *args, **kwargs)
         return Volume3D(values, self.affine)
+
+    def crop(self, mask=None, margin=0.0): # better term than bounding_box
+        """Crop to a box
+
+        Args:
+            mask (Volume3D, optional): If mask is None, the volume 
+                is cropped to the non-zero values of the Volume3D. If mask is 
+                provided, it is cropped to the non-zero values of mask 
+                instead. Defaults to None.
+            margin (float, optional): How big a margin (in physical units) 
+                around the object. Defaults to 0.
+
+        Returns:
+            Volume3D: the bounding box
+        """
+        return self.bounding_box(mask, margin)
     
-    def bounding_box(self, mask=None, margin=0.0):
+
+    def bounding_box(self, mask=None, margin=0.0): # replace by crop
         """Return the bounding box
 
         Args:
@@ -412,7 +429,8 @@ class Volume3D:
             stretch = 1.0
 
         # Affine components
-        rot, trans, ps = utils.affine_components(self.affine)
+        #rot, trans, ps = utils.affine_components(self.affine)
+        ps = self.spacing
 
         # Get new pixel spacing
         if spacing is None:
@@ -430,9 +448,12 @@ class Volume3D:
                 'spacing must be a scalar or a 3-element array')
         
         # Resample
-        affine = utils.affine_matrix(rotation=rot, translation=trans, 
-                                     pixel_spacing=spacing)
-        if len(self.shape==3):
+        affine = self.affine.copy()
+        for d in [0,1,2]:
+            affine[:3, d] = spacing[d]*self.affine[:3,d]/self.spacing[d]
+        # affine = utils.affine_matrix(rotation=rot, translation=trans, 
+        #                              pixel_spacing=spacing)
+        if len(self.shape)==3:
             values_reslice, _ = mod_affine.affine_reslice(self.values, self.affine, affine)
         else:
             # Get a flattened view
