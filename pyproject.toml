@@ -51,8 +51,8 @@ requires-python = ">=3.6" # arbitrary - relax this?
 
 
 [project.urls]
-"Homepage" = "https://qib-sheffield.github.io/vreg/"
-"Source Code" = "https://github.com/QIB-Sheffield/vreg"
+"Homepage" = "https://openmiblab.github.io/vreg/"
+"Source Code" = "https://github.com/openmiblab/vreg-package"
 
 [project.optional-dependencies]
 plot = [

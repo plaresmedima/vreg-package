@@ -63,7 +63,7 @@ class Volume3D:
 
             # Set dims
             if dims is None:
-                dims = values.shape[3:]
+                dims = list(range(values.ndim-3))
             elif len(dims) != values.ndim-3:
                 raise ValueError(
                     f"dims should have {values.ndim-3} values."
@@ -77,6 +77,7 @@ class Volume3D:
                 coords = np.stack(coords, axis=0)
             elif not isinstance(coords, np.ndarray):
                 raise ValueError("coords must be a numpy array")
+            # coords[i,j,k,n]
             elif coords.shape[0] != values.ndim-3:
                 raise ValueError(
                     f"coords should have {values.ndim-3} coordinates."
@@ -131,6 +132,13 @@ class Volume3D:
     @property
     def slice_dir(self):
         return self.affine[:3,2]/np.linalg.norm(self.affine[:3,2])
+    
+    @property
+    def is_right_handed(self):
+        normal = np.cross(self.affine[:3,0], self.affine[:3,1])
+        proj = np.dot(self.affine[:3,2], normal)
+        return proj > 0
+
 
 
     def set_values(self, values:np.ndarray):
@@ -1364,12 +1372,12 @@ def volume(values:np.ndarray, affine:np.ndarray=None,
         values = np.expand_dims(values, -1)
     if values.ndim>3:
         if coords is None:
-            coords = [np.arange(d) for d in values[3:].shape]
+            coords = [np.arange(d) for d in values.shape[3:]]
             coords = np.meshgrid(*coords, indexing='ij')
-            coords = np.stack(coords, axis=-1)
+            coords = np.stack(coords, axis=0) # coordinates for volume i, j are coords[:,i,j]
         elif isinstance(coords, tuple):
             coords = np.meshgrid(*coords, indexing='ij')
-            coords = np.stack(coords, axis=-1)   
+            coords = np.stack(coords, axis=0)   
         else:         
             coords = np.asarray(coords)
 
@@ -1606,7 +1614,7 @@ def join(vols:np.ndarray): #concat->stack, join as a generalized stack, stack-> 
     vols = vols.reshape((shape[0],-1))
     vols_stack = []
     for k in range(vols.shape[1]):
-        vstack = concatenate(vols[:,k], prec=3) 
+        vstack = concatenate(vols[:,k], prec=2) # TODO use internal precision 
         vols_stack.append(vstack)
     if len(shape) == 1:
         return vols_stack[0]
